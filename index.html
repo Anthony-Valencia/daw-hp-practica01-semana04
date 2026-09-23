@@ -1,11 +1,1635 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cosmos — Explorador de Nebulosas</title>
+
+    <style>
+      /* ============================================================
+   VARIABLES Y TEMA
+   ============================================================ */
+      :root {
+        --bg: #05060f;
+        --surface: rgba(18, 22, 45, 0.85);
+        --text: #e8ecff;
+        --muted: #9aa3c7;
+        --primary: #7c5cff;
+        --primary-contrast: #ffffff;
+        --border: rgba(124, 92, 255, 0.28);
+        --canvas-bg: radial-gradient(
+          ellipse at center,
+          #0b1030 0%,
+          #03040d 80%
+        );
+        --glow: 0 0 24px rgba(124, 92, 255, 0.55);
+        --title-grad-1: #7c5cff;
+        --title-grad-2: #22d3ee;
+        --title-grad-3: #f472b6;
+      }
+      body.theme-day {
+        --bg: #eef1ff;
+        --surface: rgba(255, 255, 255, 0.92);
+        --text: #101528;
+        --muted: #5b6288;
+        --primary: #3a2ecc;
+        --primary-contrast: #ffffff;
+        --border: rgba(58, 46, 204, 0.25);
+        --canvas-bg: radial-gradient(
+          ellipse at center,
+          #cfd7ff 0%,
+          #f5f6ff 80%
+        );
+        --glow: 0 0 24px rgba(58, 46, 204, 0.35);
+        --title-grad-1: #3a2ecc;
+        --title-grad-2: #0891b2;
+        --title-grad-3: #db2777;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        overflow: hidden;
+        transition:
+          background 0.4s,
+          color 0.4s;
+      }
+
+      /* ============================================================
+   SISTEMA DE PANTALLAS
+   ============================================================ */
+      .screen {
+        position: fixed;
+        inset: 0;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 0.6s ease,
+          visibility 0.6s ease;
+        pointer-events: none;
+      }
+      .screen.is-active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+      }
+
+      /* ============================================================
+   PANTALLA 1 — SPLASH
+   ============================================================ */
+      .splash {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2rem;
+        padding: 2rem;
+        background: radial-gradient(
+          ellipse at 50% 40%,
+          #0b1030 0%,
+          #03040d 75%
+        );
+        overflow-y: auto;
+      }
+      body.theme-day .splash {
+        background: radial-gradient(
+          ellipse at 50% 40%,
+          #dfe4ff 0%,
+          #f5f6ff 75%
+        );
+      }
+      .splash-stars {
+        position: absolute;
+        inset: 0;
+        background-image:
+          radial-gradient(1px 1px at 20% 30%, #fff 50%, transparent),
+          radial-gradient(1px 1px at 70% 60%, #fff 50%, transparent),
+          radial-gradient(1.5px 1.5px at 40% 80%, #fff 50%, transparent),
+          radial-gradient(1px 1px at 85% 20%, #fff 50%, transparent),
+          radial-gradient(1px 1px at 15% 70%, #fff 50%, transparent);
+        background-size:
+          300px 300px,
+          400px 400px,
+          350px 350px,
+          500px 500px,
+          250px 250px;
+        opacity: 0.6;
+        animation: driftStars 60s linear infinite;
+        pointer-events: none;
+      }
+      body.theme-day .splash-stars {
+        opacity: 0.15;
+      }
+      @keyframes driftStars {
+        from {
+          background-position:
+            0 0,
+            0 0,
+            0 0,
+            0 0,
+            0 0;
+        }
+        to {
+          background-position:
+            300px 300px,
+            -400px 400px,
+            350px -350px,
+            -500px 500px,
+            250px 250px;
+        }
+      }
+      .splash-header {
+        text-align: center;
+        position: relative;
+        z-index: 1;
+      }
+      .animated-title {
+        margin: 0;
+        display: inline-flex;
+        gap: 0.05em;
+        font-size: clamp(2.8rem, 9vw, 6rem);
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        line-height: 1;
+        background: linear-gradient(
+          90deg,
+          var(--title-grad-1) 0%,
+          var(--title-grad-2) 50%,
+          var(--title-grad-3) 100%
+        );
+        background-size: 200% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: gradientShift 6s linear infinite;
+      }
+      .animated-title span {
+        display: inline-block;
+        animation:
+          floatLetter 2.6s ease-in-out infinite,
+          glowPulse 3s ease-in-out infinite;
+        animation-delay: calc(var(--i) * 0.15s);
+      }
+      @keyframes floatLetter {
+        0%,
+        100% {
+          transform: translateY(0) rotate(0deg);
+        }
+        25% {
+          transform: translateY(-14px) rotate(-2deg);
+        }
+        50% {
+          transform: translateY(0) rotate(0deg);
+        }
+        75% {
+          transform: translateY(-8px) rotate(2deg);
+        }
+      }
+      @keyframes glowPulse {
+        0%,
+        100% {
+          filter: drop-shadow(0 0 12px rgba(124, 92, 255, 0.7));
+        }
+        50% {
+          filter: drop-shadow(0 0 26px rgba(34, 211, 238, 0.9));
+        }
+      }
+      @keyframes gradientShift {
+        from {
+          background-position: 0% 50%;
+        }
+        to {
+          background-position: 200% 50%;
+        }
+      }
+      .subtitle {
+        margin: 0.5rem 0 0;
+        color: var(--muted);
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+      }
+      .splash-panel {
+        position: relative;
+        z-index: 1;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 1.5rem;
+        width: min(420px, 92vw);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+      }
+      .splash-panel h2 {
+        margin: 0 0 1rem;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--primary);
+        text-align: center;
+      }
+      .control {
+        margin-bottom: 0.85rem;
+      }
+      .control label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+        font-size: 0.88rem;
+      }
+      .control output {
+        color: var(--primary);
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        width: 100%;
+        accent-color: var(--primary);
+      }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+      .toggle-row label {
+        margin: 0;
+      }
+      input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
+        cursor: pointer;
+      }
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        margin: 1rem 0 0.5rem;
+      }
+      .btn {
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        padding: 0.6rem 0.7rem;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition:
+          transform 0.15s,
+          background 0.2s,
+          box-shadow 0.2s;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--glow);
+      }
+      .btn.primary {
+        background: var(--primary);
+        color: var(--primary-contrast);
+        border-color: var(--primary);
+        grid-column: span 2;
+      }
+      .btn.small {
+        padding: 0.35rem 0.7rem;
+        font-size: 0.78rem;
+        border-radius: 8px;
+      }
+      .credit {
+        margin: 0.5rem 0 0;
+        text-align: center;
+        font-size: 0.72rem;
+        color: var(--muted);
+        letter-spacing: 0.5px;
+      }
+
+      /* ============================================================
+   PANTALLA 2 — SIMULACIÓN
+   ============================================================ */
+      .sim {
+        background: var(--canvas-bg);
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+      }
+      .floating-title {
+        position: absolute;
+        top: 1.25rem;
+        left: 1.5rem;
+        margin: 0;
+        display: flex;
+        gap: 0.03em;
+        font-size: clamp(1.4rem, 3.5vw, 2.4rem);
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        pointer-events: none;
+        color: var(--text);
+        text-shadow:
+          0 0 18px rgba(124, 92, 255, 0.75),
+          0 0 36px rgba(34, 211, 238, 0.35);
+      }
+      .floating-title span {
+        display: inline-block;
+        animation: floatLetter 3.2s ease-in-out infinite;
+        animation-delay: calc(var(--i) * 0.2s);
+      }
+      .hud {
+        position: absolute;
+        bottom: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.5rem 1rem;
+        backdrop-filter: blur(10px);
+        font-size: 0.82rem;
+        color: var(--muted);
+        white-space: nowrap;
+        max-width: calc(100vw - 2rem);
+        overflow-x: auto;
+      }
+      .hud-stats {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-variant-numeric: tabular-nums;
+      }
+      .hud-stats output,
+      .hud-stats #status {
+        color: var(--text);
+        font-weight: 700;
+      }
+      .hud-actions {
+        display: flex;
+        gap: 0.4rem;
+      }
+      .hint {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        margin: 0;
+        font-size: 0.78rem;
+        color: var(--muted);
+        background: var(--surface);
+        padding: 0.35rem 0.85rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        pointer-events: none;
+      }
+
+      /* ============================================================
+   PANTALLA 3 — NOMBRE EN MOVIMIENTO
+   ============================================================ */
+      .name-screen {
+        background: radial-gradient(
+          ellipse at 50% 30%,
+          #10163a 0%,
+          #03040d 80%
+        );
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 1rem;
+        padding: 1rem;
+      }
+      body.theme-day .name-screen {
+        background: radial-gradient(
+          ellipse at 50% 30%,
+          #dfe4ff 0%,
+          #f5f6ff 80%
+        );
+      }
+      .name-stage {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: linear-gradient(
+          180deg,
+          rgba(124, 92, 255, 0.06) 0%,
+          rgba(34, 211, 238, 0.04) 100%
+        );
+        box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.35);
+      }
+      .name-stage::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(124, 92, 255, 0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(124, 92, 255, 0.08) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+      }
+      .moving-name {
+        --nx: 0px;
+        --ny: 0px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        margin: 0;
+        padding: 0 0.35rem;
+        font-size: 4rem;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        line-height: 1;
+        white-space: nowrap;
+        color: var(--text);
+        text-shadow:
+          0 0 22px rgba(124, 92, 255, 0.85),
+          0 0 44px rgba(34, 211, 238, 0.45);
+        transform: translate3d(var(--nx), var(--ny), 0);
+        will-change: transform;
+        transition:
+          color 0.35s,
+          text-shadow 0.35s;
+        user-select: none;
+      }
+      .moving-name.hit-x {
+        color: #22d3ee;
+        text-shadow:
+          0 0 22px rgba(34, 211, 238, 0.95),
+          0 0 44px rgba(34, 211, 238, 0.55);
+      }
+      .moving-name.hit-y {
+        color: #f472b6;
+        text-shadow:
+          0 0 22px rgba(244, 114, 182, 0.95),
+          0 0 44px rgba(244, 114, 182, 0.55);
+      }
+      .moving-name.hit-corner {
+        color: #facc15;
+        text-shadow:
+          0 0 22px rgba(250, 204, 21, 0.95),
+          0 0 44px rgba(250, 204, 21, 0.55);
+      }
+      .name-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 1.25rem;
+        backdrop-filter: blur(10px);
+        height: fit-content;
+        align-self: start;
+      }
+      .name-panel h2 {
+        margin: 0 0 1rem;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--primary);
+        text-align: center;
+      }
+      .name-panel .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        margin-top: 1rem;
+      }
+      .name-panel .actions .btn.primary {
+        grid-column: span 2;
+      }
+
+      /* ============================================================
+   PANEL DE MÉTRICAS (NUEVO)
+   ============================================================ */
+      .stats-toggle {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        z-index: 60;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        font-size: 1.25rem;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        box-shadow: var(--glow);
+        transition: transform 0.15s;
+      }
+      .stats-toggle:hover {
+        transform: scale(1.08);
+      }
+
+      .stats-panel {
+        position: fixed;
+        bottom: 4.75rem;
+        right: 1rem;
+        z-index: 59;
+        width: 280px;
+        max-width: calc(100vw - 2rem);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 0.9rem 1rem;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
+        font-size: 0.82rem;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(12px);
+        transition:
+          opacity 0.25s,
+          transform 0.25s,
+          visibility 0.25s;
+      }
+      .stats-panel.is-open {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+      .stats-panel header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
+      .stats-panel h3 {
+        margin: 0;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--primary);
+      }
+      .stats-close {
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        font-size: 1.15rem;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .stats-panel ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .stats-panel li {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.28rem 0;
+        border-bottom: 1px dashed var(--border);
+      }
+      .stats-panel li:last-child {
+        border-bottom: none;
+      }
+      .stats-panel span {
+        color: var(--muted);
+      }
+      .stats-panel strong {
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+      }
+
+      /* ============================================================
+   RESPONSIVE
+   ============================================================ */
+      @media (max-width: 800px) {
+        .name-screen {
+          grid-template-columns: 1fr;
+          grid-template-rows: 1fr auto;
+        }
+        .moving-name {
+          font-size: 2.6rem;
+        }
+        .hud {
+          flex-direction: column;
+          border-radius: 14px;
+          gap: 0.4rem;
+          padding: 0.6rem;
+        }
+        .hint {
+          display: none;
+        }
+        .floating-title {
+          top: 0.75rem;
+          left: 0.75rem;
+        }
+        .stats-panel {
+          width: calc(100vw - 2rem);
+        }
+      }
+    </style>
+  </head>
+  <body class="theme-space">
+    <!-- ============ PANTALLA 1: SPLASH ============ -->
+    <section id="splash" class="screen splash is-active">
+      <div class="splash-stars" aria-hidden="true"></div>
+
+      <header class="splash-header">
+        <h1 class="animated-title" aria-label="COSMOS">
+          <span style="--i: 0">C</span>
+          <span style="--i: 1">O</span>
+          <span style="--i: 2">S</span>
+          <span style="--i: 3">M</span>
+          <span style="--i: 4">O</span>
+          <span style="--i: 5">S</span>
+        </h1>
+        <p class="subtitle">· Explorador de Nebulosas ·</p>
+      </header>
+
+      <div class="splash-panel">
+        <h2>Configura tu misión</h2>
+
+        <div class="control">
+          <label for="count"
+            >Estrellas: <output id="countValue">120</output></label
+          >
+          <input
+            type="range"
+            id="count"
+            min="20"
+            max="400"
+            value="120"
+            step="10"
+          />
+        </div>
+        <div class="control">
+          <label for="speed"
+            >Velocidad: <output id="speedValue">1.0</output></label
+          >
+          <input
+            type="range"
+            id="speed"
+            min="0.1"
+            max="3"
+            value="1"
+            step="0.1"
+          />
+        </div>
+        <div class="control">
+          <label for="glow"
+            >Brillo de nebulosa: <output id="glowValue">0.6</output></label
+          >
+          <input
+            type="range"
+            id="glow"
+            min="0"
+            max="1"
+            value="0.6"
+            step="0.05"
+          />
+        </div>
+        <div class="control toggle-row">
+          <label for="constellations">Mostrar constelaciones</label>
+          <input type="checkbox" id="constellations" checked />
+        </div>
+
+        <div class="actions">
+          <button id="startMission" class="btn primary" type="button">
+            🚀 Iniciar misión
+          </button>
+          <button id="goNameScreen" class="btn" type="button">
+            🔠 Nombre en movimiento
+          </button>
+          <button id="resetSplash" class="btn" type="button">Reiniciar</button>
+          <button id="theme" class="btn" type="button">Modo día</button>
+        </div>
+
+        <p class="credit">
+          IS093A · Desarrollo de Aplicaciones Web · Semana 04
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ PANTALLA 2: SIMULACIÓN ============ -->
+    <section id="sim" class="screen sim">
+      <canvas id="canvas"></canvas>
+
+      <h1 class="floating-title" aria-hidden="true">
+        <span style="--i: 0">C</span>
+        <span style="--i: 1">O</span>
+        <span style="--i: 2">S</span>
+        <span style="--i: 3">M</span>
+        <span style="--i: 4">O</span>
+        <span style="--i: 5">S</span>
+      </h1>
+
+      <div class="hud">
+        <div class="hud-stats">
+          <span>FPS <output id="fps">0</output></span>
+          <span>·</span>
+          <span>Estrellas <output id="active">0</output></span>
+          <span>·</span>
+          <span id="status">explorando</span>
+        </div>
+        <div class="hud-actions">
+          <button id="toggle" class="btn small" type="button">Pausar</button>
+          <button id="warp" class="btn small" type="button">
+            Hiperespacio
+          </button>
+          <button id="backToMenu" class="btn small" type="button">Menú</button>
+        </div>
+      </div>
+
+      <p class="hint">
+        Mueve el cursor sobre el cosmos para atraer las estrellas ✨
+      </p>
+    </section>
+
+    <!-- ============ PANTALLA 3: NOMBRE EN MOVIMIENTO ============ -->
+    <section id="nameScreen" class="screen name-screen">
+      <div id="nameStage" class="name-stage">
+        <h1 id="movingName" class="moving-name">COSMOS</h1>
+      </div>
+
+      <div class="name-panel">
+        <h2>Nombre en movimiento</h2>
+
+        <div class="control">
+          <label for="nameSpeed"
+            >Velocidad: <output id="nameSpeedValue">1.0</output></label
+          >
+          <input
+            type="range"
+            id="nameSpeed"
+            min="0"
+            max="5"
+            value="1"
+            step="0.1"
+          />
+        </div>
+        <div class="control">
+          <label for="nameSize"
+            >Tamaño: <output id="nameSizeValue">4.0</output></label
+          >
+          <input
+            type="range"
+            id="nameSize"
+            min="1.5"
+            max="8"
+            value="4"
+            step="0.5"
+          />
+        </div>
+        <div class="control toggle-row">
+          <label for="nameTrail">Estela de color al chocar</label>
+          <input type="checkbox" id="nameTrail" checked />
+        </div>
+
+        <div class="actions">
+          <button id="nameStart" class="btn primary" type="button">
+            ▶ Iniciar
+          </button>
+          <button id="nameReset" class="btn" type="button">Reiniciar</button>
+          <button id="nameBack" class="btn" type="button">Menú</button>
+        </div>
+
+        <p class="credit">El nombre rebota en los bordes de la pantalla.</p>
+      </div>
+    </section>
+
+    <!-- ============ PANEL DE MÉTRICAS (NUEVO) ============ -->
+    <button
+      id="statsToggle"
+      class="stats-toggle"
+      type="button"
+      aria-label="Mostrar métricas"
+    >
+      📊
+    </button>
+
+    <aside id="statsPanel" class="stats-panel" aria-live="polite">
+      <header>
+        <h3>Métricas en vivo</h3>
+        <button
+          id="statsClose"
+          class="stats-close"
+          type="button"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </header>
+      <ul>
+        <li><span>Clics totales</span><strong id="statClicks">0</strong></li>
+        <li><span>FPS actual</span><strong id="statFps">0</strong></li>
+        <li>
+          <span>Frames · estrellas</span><strong id="statFramesStars">0</strong>
+        </li>
+        <li>
+          <span>Frames · nombre</span><strong id="statFramesName">0</strong>
+        </li>
+        <li>
+          <span>Rebotes del nombre</span><strong id="statBounces">0</strong>
+        </li>
+        <li>
+          <span>Distancia recorrida</span
+          ><strong id="statDistance">0 px</strong>
+        </li>
+        <li>
+          <span>Tiempo de sesión</span><strong id="statTime">00:00</strong>
+        </li>
+        <li>
+          <span>Estrellas en escena</span><strong id="statStars">0</strong>
+        </li>
+        <li>
+          <span>Pantalla actual</span><strong id="statScreen">splash</strong>
+        </li>
+      </ul>
+    </aside>
+
+    <script>
+      (() => {
+        "use strict";
+
+        // ============================================================
+        // 1. Referencias al DOM
+        // ============================================================
+        const screens = {
+          splash: document.querySelector("#splash"),
+          sim: document.querySelector("#sim"),
+          name: document.querySelector("#nameScreen"),
+        };
+
+        const canvas = document.querySelector("#canvas");
+        const ctx = canvas.getContext("2d");
+
+        const countInput = document.querySelector("#count");
+        const countValue = document.querySelector("#countValue");
+        const speedInput = document.querySelector("#speed");
+        const speedValue = document.querySelector("#speedValue");
+        const glowInput = document.querySelector("#glow");
+        const glowValue = document.querySelector("#glowValue");
+        const constellationToggle = document.querySelector("#constellations");
+
+        const startMissionBtn = document.querySelector("#startMission");
+        const goNameScreenBtn = document.querySelector("#goNameScreen");
+        const resetSplashBtn = document.querySelector("#resetSplash");
+        const themeBtn = document.querySelector("#theme");
+
+        const toggleBtn = document.querySelector("#toggle");
+        const warpBtn = document.querySelector("#warp");
+        const backToMenuBtn = document.querySelector("#backToMenu");
+
+        const fpsOutput = document.querySelector("#fps");
+        const statusOutput = document.querySelector("#status");
+        const activeOutput = document.querySelector("#active");
+
+        const nameStage = document.querySelector("#nameStage");
+        const movingName = document.querySelector("#movingName");
+        const nameSpeedInput = document.querySelector("#nameSpeed");
+        const nameSpeedValue = document.querySelector("#nameSpeedValue");
+        const nameSizeInput = document.querySelector("#nameSize");
+        const nameSizeValue = document.querySelector("#nameSizeValue");
+        const nameTrailToggle = document.querySelector("#nameTrail");
+        const nameStartBtn = document.querySelector("#nameStart");
+        const nameResetBtn = document.querySelector("#nameReset");
+        const nameBackBtn = document.querySelector("#nameBack");
+
+        // Panel de métricas
+        const statsToggle = document.querySelector("#statsToggle");
+        const statsPanel = document.querySelector("#statsPanel");
+        const statsClose = document.querySelector("#statsClose");
+        const statClicks = document.querySelector("#statClicks");
+        const statFps = document.querySelector("#statFps");
+        const statFramesStars = document.querySelector("#statFramesStars");
+        const statFramesName = document.querySelector("#statFramesName");
+        const statBounces = document.querySelector("#statBounces");
+        const statDistance = document.querySelector("#statDistance");
+        const statTime = document.querySelector("#statTime");
+        const statStars = document.querySelector("#statStars");
+        const statScreen = document.querySelector("#statScreen");
+
+        // ============================================================
+        // 2. Utilidades
+        // ============================================================
+        const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+        const rand = (min, max) => Math.random() * (max - min) + min;
+
+        // ============================================================
+        // 3. CONTADOR GLOBAL DE CLICS
+        //    Se registra en fase de captura para atrapar también los
+        //    clics cuyo handler detiene la propagación.
+        // ============================================================
+        let globalClicks = 0;
+        document.addEventListener(
+          "click",
+          () => {
+            globalClicks++;
+          },
+          true,
+        );
+
+        // Momento de inicio de la sesión (para "Tiempo de sesión")
+        const sessionStart = performance.now();
+
+        // ============================================================
+        // 4. Cambio de pantallas
+        // ============================================================
+        const showScreen = (target) => {
+          Object.entries(screens).forEach(([key, el]) => {
+            el.classList.toggle("is-active", key === target);
+          });
+        };
+
+        const getActiveScreenName = () => {
+          if (screens.sim.classList.contains("is-active")) return "simulación";
+          if (screens.name.classList.contains("is-active")) return "nombre";
+          return "splash";
+        };
+
+        // ============================================================
+        // 5. Canvas
+        // ============================================================
+        const resizeCanvas = () => {
+          const rect = canvas.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = Math.floor(rect.width * dpr);
+          canvas.height = Math.floor(rect.height * dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        window.addEventListener("resize", resizeCanvas);
+
+        // ============================================================
+        // 6. Puntero
+        // ============================================================
+        const pointer = { x: -9999, y: -9999, active: false };
+        const onPointerMove = (event) => {
+          const rect = canvas.getBoundingClientRect();
+          pointer.x = event.clientX - rect.left;
+          pointer.y = event.clientY - rect.top;
+          pointer.active = true;
+        };
+        const onPointerLeave = () => {
+          pointer.active = false;
+          pointer.x = -9999;
+          pointer.y = -9999;
+        };
+        canvas.addEventListener("pointermove", onPointerMove);
+        canvas.addEventListener("pointerleave", onPointerLeave);
+
+        // ============================================================
+        // 7. CLOSURE: sistema estelar (con contador de frames)
+        //    IA-uso: "¿por qué mi closure pierde el estado entre frames?".
+        // ============================================================
+        const createStarSystem = (initialCount = 120) => {
+          let stars = [];
+          let animationId = null;
+          let lastTime = 0;
+          let running = false;
+          let speed = 1;
+          let glow = 0.6;
+          let count = initialCount;
+          let constellationMode = true;
+          let warp = 0;
+          let warpTarget = 0;
+
+          // --- contadores ---
+          let totalFrames = 0;
+          let frames = 0;
+          let fpsTimer = 0;
+          let currentFps = 0;
+
+          const logicalSize = () => {
+            const dpr = window.devicePixelRatio || 1;
+            return { width: canvas.width / dpr, height: canvas.height / dpr };
+          };
+
+          const createStar = (width, height) => {
+            const radius = rand(0.6, 2.2);
+            const angle = rand(0, Math.PI * 2);
+            const velocity = rand(6, 28);
+            return {
+              x: rand(0, width),
+              y: rand(0, height),
+              vx: Math.cos(angle) * velocity,
+              vy: Math.sin(angle) * velocity,
+              radius,
+              baseRadius: radius,
+              hue: rand(210, 290),
+              twinkle: rand(0, Math.PI * 2),
+              twinkleSpeed: rand(0.6, 1.8),
+            };
+          };
+
+          const resetStars = () => {
+            const { width, height } = logicalSize();
+            stars = Array.from({ length: count }, () =>
+              createStar(width, height),
+            );
+            activeOutput.textContent = String(stars.length);
+          };
+
+          const update = (dt) => {
+            const { width, height } = logicalSize();
+            warp += (warpTarget - warp) * Math.min(1, dt * 3);
+
+            for (const s of stars) {
+              s.x += s.vx * speed * dt * (1 + warp * 8);
+              s.y += s.vy * speed * dt * (1 + warp * 8);
+
+              if (pointer.active) {
+                const dx = pointer.x - s.x;
+                const dy = pointer.y - s.y;
+                const dist2 = dx * dx + dy * dy;
+                const influence = 140 * 140;
+                if (dist2 < influence && dist2 > 1) {
+                  const dist = Math.sqrt(dist2);
+                  const force = (1 - dist / 140) * 60;
+                  s.x += (dx / dist) * force * dt;
+                  s.y += (dy / dist) * force * dt;
+                }
+              }
+
+              if (s.x < -5) s.x = width + 5;
+              if (s.x > width + 5) s.x = -5;
+              if (s.y < -5) s.y = height + 5;
+              if (s.y > height + 5) s.y = -5;
+
+              s.twinkle += s.twinkleSpeed * dt;
+              s.radius = s.baseRadius * (0.75 + 0.35 * Math.sin(s.twinkle));
+            }
+          };
+
+          const drawNebula = (width, height) => {
+            const t = performance.now() * 0.0001;
+            const blobs = [
+              {
+                x: width * (0.3 + 0.1 * Math.sin(t)),
+                y: height * 0.4,
+                h: 250,
+                r: width * 0.5,
+              },
+              {
+                x: width * 0.75,
+                y: height * (0.6 + 0.1 * Math.cos(t * 1.3)),
+                h: 290,
+                r: width * 0.45,
+              },
+              { x: width * 0.5, y: height * 0.85, h: 220, r: width * 0.55 },
+            ];
+            ctx.globalCompositeOperation = "lighter";
+            for (const b of blobs) {
+              const grd = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+              grd.addColorStop(0, `hsla(${b.h}, 90%, 55%, ${0.15 * glow})`);
+              grd.addColorStop(0.5, `hsla(${b.h}, 90%, 40%, ${0.06 * glow})`);
+              grd.addColorStop(1, "hsla(0, 0%, 0%, 0)");
+              ctx.fillStyle = grd;
+              ctx.fillRect(0, 0, width, height);
+            }
+            ctx.globalCompositeOperation = "source-over";
+          };
+
+          const draw = () => {
+            const { width, height } = logicalSize();
+            ctx.clearRect(0, 0, width, height);
+            drawNebula(width, height);
+
+            if (constellationMode && stars.length <= 220 && warp < 0.4) {
+              ctx.lineWidth = 0.6;
+              const maxDist = 110;
+              const maxDist2 = maxDist * maxDist;
+              for (let i = 0; i < stars.length; i++) {
+                const a = stars[i];
+                for (let j = i + 1; j < stars.length; j++) {
+                  const b = stars[j];
+                  const dx = a.x - b.x;
+                  const dy = a.y - b.y;
+                  const d2 = dx * dx + dy * dy;
+                  if (d2 < maxDist2) {
+                    const alpha = (1 - d2 / maxDist2) * 0.35 * (1 - warp);
+                    ctx.strokeStyle = `hsla(${(a.hue + b.hue) / 2}, 90%, 70%, ${alpha})`;
+                    ctx.beginPath();
+                    ctx.moveTo(a.x, a.y);
+                    ctx.lineTo(b.x, b.y);
+                    ctx.stroke();
+                  }
+                }
+              }
+            }
+
+            for (const s of stars) {
+              const r = s.radius + warp * 1.5;
+              const alpha = 0.7 + 0.3 * Math.sin(s.twinkle);
+              ctx.beginPath();
+              ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+              ctx.fillStyle = `hsla(${s.hue}, 90%, 78%, ${alpha})`;
+              ctx.shadowColor = `hsla(${s.hue}, 100%, 70%, ${0.9 * glow})`;
+              ctx.shadowBlur = 10 * glow + warp * 20;
+              ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+          };
+
+          const updateFps = (timestamp) => {
+            frames++;
+            if (fpsTimer === 0) fpsTimer = timestamp;
+            const elapsed = timestamp - fpsTimer;
+            if (elapsed >= 500) {
+              currentFps = Math.round((frames * 1000) / elapsed);
+              frames = 0;
+              fpsTimer = timestamp;
+              fpsOutput.textContent = String(currentFps);
+            }
+          };
+
+          const tick = (timestamp) => {
+            if (!running) return;
+            if (!lastTime) lastTime = timestamp;
+            const dt = clamp((timestamp - lastTime) / 1000, 0, 0.05);
+            lastTime = timestamp;
+
+            totalFrames++; // ← contador de frames
+            updateFps(timestamp);
+            update(dt);
+            draw();
+
+            animationId = requestAnimationFrame(tick);
+          };
+
+          const start = () => {
+            if (running) return;
+            running = true;
+            lastTime = 0;
+            statusOutput.textContent = "explorando";
+            toggleBtn.textContent = "Pausar";
+            animationId = requestAnimationFrame(tick);
+          };
+
+          const pause = () => {
+            if (!running) return;
+            running = false;
+            if (animationId) {
+              cancelAnimationFrame(animationId);
+              animationId = null;
+            }
+            statusOutput.textContent = "en pausa";
+            toggleBtn.textContent = "Reanudar";
+          };
+
+          const reset = () => {
+            const wasRunning = running;
+            pause();
+            resetStars();
+            draw();
+            statusOutput.textContent = "reiniciado";
+            if (wasRunning) start();
+          };
+
+          const setSpeed = (v) => {
+            speed = clamp(Number(v) || 1, 0.1, 3);
+          };
+          const setGlow = (v) => {
+            glow = clamp(Number(v) || 0, 0, 1);
+          };
+          const setCount = (v) => {
+            count = clamp(Number(v) || 120, 20, 400);
+            resetStars();
+            if (!running) draw();
+          };
+          const setConstellations = (v) => {
+            constellationMode = Boolean(v);
+            if (!running) draw();
+          };
+
+          let warpTimeout = null;
+          const triggerWarp = () => {
+            warpTarget = 1;
+            if (warpTimeout) clearTimeout(warpTimeout);
+            warpTimeout = setTimeout(() => {
+              warpTarget = 0;
+            }, 1200);
+          };
+
+          const destroy = () => {
+            pause();
+            if (warpTimeout) clearTimeout(warpTimeout);
+            window.removeEventListener("resize", resizeCanvas);
+            canvas.removeEventListener("pointermove", onPointerMove);
+            canvas.removeEventListener("pointerleave", onPointerLeave);
+          };
+
+          resetStars();
+
+          return {
+            start,
+            pause,
+            reset,
+            setSpeed,
+            setGlow,
+            setCount,
+            setConstellations,
+            triggerWarp,
+            destroy,
+            getState: () => ({ running }),
+            getStats: () => ({
+              running,
+              fps: currentFps,
+              frames: totalFrames,
+              stars: stars.length,
+              speed,
+              glow,
+            }),
+          };
+        };
+
+        // ============================================================
+        // 8. CLOSURE: nombre en movimiento
+        //    Ahora cuenta frames, rebotes y distancia.
+        //    IA-uso: "cómo mover un elemento con transform sin style inline".
+        // ============================================================
+        const createNameMover = (element, stage) => {
+          let x = 0,
+            y = 0;
+          let vx = 140,
+            vy = 110;
+          let speed = 1;
+          let size = 4;
+          let running = false;
+          let animationId = null;
+          let lastTime = 0;
+          let bounds = { w: 0, h: 0, elw: 0, elh: 0 };
+          let flashTimeout = null;
+
+          // --- contadores ---
+          let totalFrames = 0;
+          let bounces = 0;
+          let distance = 0;
+
+          const measure = () => {
+            bounds.w = stage.clientWidth;
+            bounds.h = stage.clientHeight;
+            bounds.elw = element.offsetWidth;
+            bounds.elh = element.offsetHeight;
+          };
+
+          const applyTransform = () => {
+            element.style.setProperty("--nx", `${x}px`);
+            element.style.setProperty("--ny", `${y}px`);
+          };
+
+          const centerAndStop = () => {
+            measure();
+            x = Math.max(0, (bounds.w - bounds.elw) / 2);
+            y = Math.max(0, (bounds.h - bounds.elh) / 2);
+            applyTransform();
+          };
+
+          const flashHit = (type) => {
+            if (!nameTrailToggle.checked) return;
+            element.classList.remove("hit-x", "hit-y", "hit-corner");
+            void element.offsetWidth;
+            element.classList.add(type);
+            if (flashTimeout) clearTimeout(flashTimeout);
+            flashTimeout = setTimeout(() => {
+              element.classList.remove("hit-x", "hit-y", "hit-corner");
+            }, 250);
+          };
+
+          const update = (dt) => {
+            const dx = vx * speed * dt;
+            const dy = vy * speed * dt;
+            x += dx;
+            y += dy;
+            distance += Math.hypot(dx, dy); // ← acumula distancia
+
+            let hitX = false,
+              hitY = false;
+
+            if (x <= 0) {
+              x = 0;
+              vx = Math.abs(vx);
+              hitX = true;
+            }
+            if (x + bounds.elw >= bounds.w) {
+              x = bounds.w - bounds.elw;
+              vx = -Math.abs(vx);
+              hitX = true;
+            }
+            if (y <= 0) {
+              y = 0;
+              vy = Math.abs(vy);
+              hitY = true;
+            }
+            if (y + bounds.elh >= bounds.h) {
+              y = bounds.h - bounds.elh;
+              vy = -Math.abs(vy);
+              hitY = true;
+            }
+
+            if (hitX || hitY) bounces++; // ← acumula rebotes
+
+            if (hitX && hitY) flashHit("hit-corner");
+            else if (hitX) flashHit("hit-x");
+            else if (hitY) flashHit("hit-y");
+
+            applyTransform();
+          };
+
+          const tick = (timestamp) => {
+            if (!running) return;
+            if (!lastTime) lastTime = timestamp;
+            const dt = clamp((timestamp - lastTime) / 1000, 0, 0.05);
+            lastTime = timestamp;
+
+            totalFrames++; // ← contador de frames
+            update(dt);
+            animationId = requestAnimationFrame(tick);
+          };
+
+          const start = () => {
+            if (running) return;
+            running = true;
+            lastTime = 0;
+            nameStartBtn.textContent = "⏸ Pausar";
+            animationId = requestAnimationFrame(tick);
+          };
+
+          const pause = () => {
+            if (!running) return;
+            running = false;
+            if (animationId) {
+              cancelAnimationFrame(animationId);
+              animationId = null;
+            }
+            nameStartBtn.textContent = "▶ Reanudar";
+          };
+
+          const reset = () => {
+            const wasRunning = running;
+            pause();
+            const norm = Math.hypot(vx, vy) || 1;
+            vx = (vx / norm) * 140;
+            vy = (vy / norm) * 110;
+            centerAndStop();
+            element.classList.remove("hit-x", "hit-y", "hit-corner");
+            nameStartBtn.textContent = "▶ Iniciar";
+            if (wasRunning) start();
+          };
+
+          const setSpeed = (v) => {
+            speed = clamp(Number(v) || 0, 0, 5);
+          };
+
+          const setSize = (v) => {
+            size = clamp(Number(v) || 4, 1.5, 8);
+            element.style.fontSize = `${size}rem`;
+            measure();
+            x = clamp(x, 0, Math.max(0, bounds.w - bounds.elw));
+            y = clamp(y, 0, Math.max(0, bounds.h - bounds.elh));
+            applyTransform();
+          };
+
+          const onResize = () => {
+            measure();
+            x = clamp(x, 0, Math.max(0, bounds.w - bounds.elw));
+            y = clamp(y, 0, Math.max(0, bounds.h - bounds.elh));
+            applyTransform();
+          };
+
+          const destroy = () => {
+            pause();
+            if (flashTimeout) clearTimeout(flashTimeout);
+          };
+
+          centerAndStop();
+
+          return {
+            start,
+            pause,
+            reset,
+            setSpeed,
+            setSize,
+            onResize,
+            destroy,
+            getState: () => ({ running }),
+            getStats: () => ({
+              running,
+              frames: totalFrames,
+              bounces,
+              distance,
+              x: Math.round(x),
+              y: Math.round(y),
+              speed,
+              size,
+            }),
+          };
+        };
+
+        // ============================================================
+        // 9. Instancias + handlers
+        // ============================================================
+        const system = createStarSystem(Number(countInput.value));
+        const nameMover = createNameMover(movingName, nameStage);
+
+        const onStartMission = () => {
+          showScreen("sim");
+          requestAnimationFrame(() => {
+            resizeCanvas();
+            system.setCount(countInput.value);
+            system.setSpeed(speedInput.value);
+            system.setGlow(glowInput.value);
+            system.setConstellations(constellationToggle.checked);
+            system.start();
+          });
+        };
+
+        const onBackToMenu = () => {
+          system.pause();
+          showScreen("splash");
+        };
+
+        const onGoNameScreen = () => {
+          system.pause();
+          showScreen("name");
+          requestAnimationFrame(() => nameMover.onResize());
+        };
+
+        const onNameBack = () => {
+          nameMover.pause();
+          nameStartBtn.textContent = "▶ Iniciar";
+          showScreen("splash");
+        };
+
+        const onToggle = () => {
+          const { running } = system.getState();
+          running ? system.pause() : system.start();
+        };
+
+        const onWarp = () => {
+          system.triggerWarp();
+          if (!system.getState().running) system.start();
+        };
+
+        const onResetSplash = () => {
+          countInput.value = 120;
+          speedInput.value = 1;
+          glowInput.value = 0.6;
+          constellationToggle.checked = true;
+          countValue.textContent = "120";
+          speedValue.textContent = "1.0";
+          glowValue.textContent = "0.60";
+          system.setCount(120);
+          system.setSpeed(1);
+          system.setGlow(0.6);
+          system.setConstellations(true);
+          system.reset();
+        };
+
+        const onCountInput = (e) => {
+          countValue.textContent = e.target.value;
+          system.setCount(e.target.value);
+        };
+        const onSpeedInput = (e) => {
+          speedValue.textContent = Number(e.target.value).toFixed(1);
+          system.setSpeed(e.target.value);
+        };
+        const onGlowInput = (e) => {
+          glowValue.textContent = Number(e.target.value).toFixed(2);
+          system.setGlow(e.target.value);
+        };
+        const onConstellations = (e) =>
+          system.setConstellations(e.target.checked);
+
+        const onThemeToggle = () => {
+          const isDay = document.body.classList.toggle("theme-day");
+          themeBtn.textContent = isDay ? "Modo noche" : "Modo día";
+        };
+
+        const onNameStart = () => {
+          const { running } = nameMover.getState();
+          running ? nameMover.pause() : nameMover.start();
+        };
+        const onNameReset = () => nameMover.reset();
+        const onNameSpeedInput = (e) => {
+          nameSpeedValue.textContent = Number(e.target.value).toFixed(1);
+          nameMover.setSpeed(e.target.value);
+        };
+        const onNameSizeInput = (e) => {
+          nameSizeValue.textContent = Number(e.target.value).toFixed(1);
+          nameMover.setSize(e.target.value);
+        };
+
+        // ============================================================
+        // 10. Panel de métricas
+        // ============================================================
+        const formatTime = (ms) => {
+          const totalSec = Math.floor(ms / 1000);
+          const m = String(Math.floor(totalSec / 60)).padStart(2, "0");
+          const s = String(totalSec % 60).padStart(2, "0");
+          return `${m}:${s}`;
+        };
+
+        const updateStatsPanel = () => {
+          if (!statsPanel.classList.contains("is-open")) return;
+
+          const starStats = system.getStats();
+          const nameStats = nameMover.getStats();
+
+          statClicks.textContent = String(globalClicks);
+          statFps.textContent = String(starStats.fps);
+          statFramesStars.textContent = String(starStats.frames);
+          statFramesName.textContent = String(nameStats.frames);
+          statBounces.textContent = String(nameStats.bounces);
+          statDistance.textContent = `${Math.round(nameStats.distance)} px`;
+          statTime.textContent = formatTime(performance.now() - sessionStart);
+          statStars.textContent = String(starStats.stars);
+          statScreen.textContent = getActiveScreenName();
+        };
+
+        // Loop propio de métricas: actualiza cada 250 ms usando rAF
+        const startStatsLoop = () => {
+          let last = 0;
+          const loop = (t) => {
+            if (t - last > 250) {
+              last = t;
+              updateStatsPanel();
+            }
+            requestAnimationFrame(loop);
+          };
+          requestAnimationFrame(loop);
+        };
+
+        const onStatsToggle = () => {
+          const willOpen = !statsPanel.classList.contains("is-open");
+          statsPanel.classList.toggle("is-open", willOpen);
+          statsToggle.setAttribute(
+            "aria-label",
+            willOpen ? "Ocultar métricas" : "Mostrar métricas",
+          );
+          if (willOpen) updateStatsPanel();
+        };
+
+        const onStatsClose = () => {
+          statsPanel.classList.remove("is-open");
+          statsToggle.setAttribute("aria-label", "Mostrar métricas");
+        };
+
+        // ============================================================
+        // 11. Listeners
+        // ============================================================
+        startMissionBtn.addEventListener("click", onStartMission);
+        goNameScreenBtn.addEventListener("click", onGoNameScreen);
+        resetSplashBtn.addEventListener("click", onResetSplash);
+        themeBtn.addEventListener("click", onThemeToggle);
+
+        toggleBtn.addEventListener("click", onToggle);
+        warpBtn.addEventListener("click", onWarp);
+        backToMenuBtn.addEventListener("click", onBackToMenu);
+
+        countInput.addEventListener("input", onCountInput);
+        speedInput.addEventListener("input", onSpeedInput);
+        glowInput.addEventListener("input", onGlowInput);
+        constellationToggle.addEventListener("change", onConstellations);
+
+        nameStartBtn.addEventListener("click", onNameStart);
+        nameResetBtn.addEventListener("click", onNameReset);
+        nameBackBtn.addEventListener("click", onNameBack);
+        nameSpeedInput.addEventListener("input", onNameSpeedInput);
+        nameSizeInput.addEventListener("input", onNameSizeInput);
+
+        statsToggle.addEventListener("click", onStatsToggle);
+        statsClose.addEventListener("click", onStatsClose);
+
+        window.addEventListener("resize", () => {
+          if (screens.name.classList.contains("is-active"))
+            nameMover.onResize();
+        });
+
+        window.addEventListener(
+          "pagehide",
+          () => {
+            system.destroy();
+            nameMover.destroy();
+          },
+          { once: true },
+        );
+
+        // ============================================================
+        // 12. Init
+        // ============================================================
+        resizeCanvas();
+        system.setGlow(glowInput.value);
+        system.setSpeed(speedInput.value);
+        system.setCount(countInput.value);
+        system.setConstellations(constellationToggle.checked);
+        nameMover.setSpeed(nameSpeedInput.value);
+        nameMover.setSize(nameSizeInput.value);
+
+        startStatsLoop();
+
+        // IA-uso: consulté "closure vs global scope", "cancelAnimationFrame",
+        // "cómo contar clics a nivel documento en fase de captura",
+        // "cómo medir frames con rAF sin setInterval".
+        // Implementación adaptada manualmente.
+      })();
+    </script>
+  </body>
 </html>

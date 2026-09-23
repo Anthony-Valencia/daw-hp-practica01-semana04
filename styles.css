@@ -1,0 +1,130 @@
+/* ============================================================
+   PANTALLA 3: NOMBRE EN MOVIMIENTO
+   ============================================================ */
+.name-screen {
+  background: radial-gradient(ellipse at 50% 30%, #10163a 0%, #03040d 80%);
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+body.theme-day .name-screen {
+  background: radial-gradient(ellipse at 50% 30%, #dfe4ff 0%, #f5f6ff 80%);
+}
+
+.name-stage {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: linear-gradient(
+    180deg,
+    rgba(124, 92, 255, 0.06) 0%,
+    rgba(34, 211, 238, 0.04) 100%
+  );
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.35);
+}
+
+/* Rejilla decorativa */
+.name-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(124, 92, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 92, 255, 0.08) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* El nombre usa variables CSS para su posición (sin estilos inline) */
+.moving-name {
+  --nx: 0px;
+  --ny: 0px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0 0.35rem;
+  font-size: 4rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--text);
+  text-shadow:
+    0 0 22px rgba(124, 92, 255, 0.85),
+    0 0 44px rgba(34, 211, 238, 0.45);
+  transform: translate3d(var(--nx), var(--ny), 0);
+  will-change: transform;
+  transition:
+    color 0.35s,
+    text-shadow 0.35s;
+  user-select: none;
+}
+
+/* Clases para el "impacto" al chocar */
+.moving-name.hit-x {
+  color: #22d3ee;
+  text-shadow:
+    0 0 22px rgba(34, 211, 238, 0.95),
+    0 0 44px rgba(34, 211, 238, 0.55);
+}
+
+.moving-name.hit-y {
+  color: #f472b6;
+  text-shadow:
+    0 0 22px rgba(244, 114, 182, 0.95),
+    0 0 44px rgba(244, 114, 182, 0.55);
+}
+
+.moving-name.hit-corner {
+  color: #facc15;
+  text-shadow:
+    0 0 22px rgba(250, 204, 21, 0.95),
+    0 0 44px rgba(250, 204, 21, 0.55);
+}
+
+/* Panel de controles */
+.name-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.25rem;
+  backdrop-filter: blur(10px);
+  height: fit-content;
+  align-self: start;
+}
+
+.name-panel h2 {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--primary);
+  text-align: center;
+}
+
+.name-panel .actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.name-panel .actions .btn.primary {
+  grid-column: span 2;
+}
+
+/* Responsive */
+@media (max-width: 800px) {
+  .name-screen {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .moving-name {
+    font-size: 2.6rem;
+  }
+}
